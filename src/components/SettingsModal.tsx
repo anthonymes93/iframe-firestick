@@ -5,6 +5,7 @@ interface Props {
   config: DisplayConfig;
   onSave: (config: DisplayConfig) => void;
   onClose: () => void;
+  saveError?: string | null;
 }
 
 function generateId() {
@@ -25,7 +26,7 @@ interface PageRow {
   urlError: string;
 }
 
-export default function SettingsModal({ config, onSave, onClose }: Props) {
+export default function SettingsModal({ config, onSave, onClose, saveError }: Props) {
   const [rows, setRows] = useState<PageRow[]>(
     config.pages.map(p => ({ page: { ...p }, urlError: '' }))
   );
@@ -201,6 +202,7 @@ export default function SettingsModal({ config, onSave, onClose }: Props) {
         </div>
 
         <div className="modal-footer">
+          {saveError && <p className="modal-save-error">{saveError}</p>}
           <button className="btn-cancel" onClick={onClose}>Cancel</button>
           <button className="btn-save" onClick={handleSave}>Save</button>
         </div>

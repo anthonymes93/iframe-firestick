@@ -1,25 +1,49 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import IframeRotator from './components/IframeRotator';
 import SettingsModal from './components/SettingsModal';
 import type { DisplayConfig } from './types';
-import { loadConfig, saveConfig } from './utils/storage';
+import { loadSettings, saveSettings } from './services/displaySettingsService';
 import './App.css';
 
 export default function App() {
-  const [config, setConfig] = useState<DisplayConfig>(loadConfig);
+  const [config, setConfig] = useState<DisplayConfig | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
-  const handleSave = (updated: DisplayConfig) => {
-    saveConfig(updated);
-    setConfig(updated);
-    setShowModal(false);
+  useEffect(() => {
+    loadSettings()
+      .then(setConfig)
+      .catch(() => setLoadError('Could not load settings from Firestore. Check the console for details.'));
+  }, []);
+
+  const handleSave = async (updated: DisplayConfig) => {
+    setSaveError(null);
+    try {
+      await saveSettings(updated);
+      setConfig(updated);
+      setShowModal(false);
+    } catch {
+      setSaveError('Failed to save settings. Check the console for details.');
+    }
   };
+
+  if (!config) {
+    return (
+      <div className="app-init">
+        {loadError
+          ? <p className="app-init-error">{loadError}</p>
+          : <div className="app-init-spinner" aria-label="Loading" />
+        }
+      </div>
+    );
+  }
 
   return (
     <div className="app">
       <button
         className="settings-btn"
-        onClick={() => setShowModal(prev => !prev)}
+        onClick={() => { setShowModal(prev => !prev); setSaveError(null); }}
         aria-label="Open settings"
         title="Settings"
       >
@@ -35,7 +59,8 @@ export default function App() {
         <SettingsModal
           config={config}
           onSave={handleSave}
-          onClose={() => setShowModal(false)}
+          onClose={() => { setShowModal(false); setSaveError(null); }}
+          saveError={saveError}
         />
       )}
     </div>
